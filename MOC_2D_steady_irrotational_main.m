@@ -15,7 +15,7 @@ params.T     = 3000; % [K] Stagnation temperature
 geom.yt    = 1  ; % [m] throat radius
 geom.rhou  = 2  ; % [m] radius of upstream circular arc, required by MOC_2D_steady_irrotational_IVLINE
 geom.rhod  = 0.5; % [m] radius of downstream circular arc
-geom.NI    = 11 ; % Number of points on the initial-value line
+geom.NI    = 7 ; % Number of points on the initial-value line
 geom.ta    = 15 ; % [deg] Attachment angle between circular arc and line
 geom.te    = 15 ; % [deg] Exit lip point angle
 geom.xe    = 10 ; % [m] Nozzle length
@@ -45,7 +45,9 @@ V(1,1) = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extend the solution from the initial-value line
 disp('Computing the extent from the initial-value line...')
-LENG_INDI(1)=1;
+LENG_INDI(1)  = 1;
+ind_patch_tri = 0;
+ind_patch_quad = 0;
 for I = 2:geom.NI
    X(1,I) = xvnull(I); Y(1,I) = ythroat(I); U(1,I) = uvnull(I); V(1,I) = 0;
    LENG_INDI(I)=1;
@@ -56,6 +58,15 @@ for I = 2:geom.NI
                                                                                  X(J-1,I  ),Y(J-1,I  ),U(J-1,I  ),V(J-1,I  ),...
                                                                                  params) ;
       LENG_INDI(I)++;
+      if (J==2)
+        ind_patch_tri ++;
+        patch_i_tri(1:3,ind_patch_tri) = [ I   ; I-1 ; I ] ;
+        patch_j_tri(1:3,ind_patch_tri) = [ J-1 ; J-1 ; J ] ;
+      else
+        ind_patch_quad ++;
+        patch_i_quad(1:4,ind_patch_quad) = [ I   ; I-1 ; I-1 ; I ] ;
+        patch_j_quad(1:4,ind_patch_quad) = [ J-1 ; J-2 ; J-1 ; J ] ;
+      endif
    endfor
    % Point on the axis of symmetry
    J++;
@@ -64,6 +75,9 @@ for I = 2:geom.NI
                                                                               params) ;
    Y(J,I) += 1.e-6 ; % To avoid singularity on axis
    LENG_INDI(I)++;
+   ind_patch_tri ++;
+   patch_i_tri(1:3,ind_patch_tri) = [ I   ; I-1 ; I ] ;
+   patch_j_tri(1:3,ind_patch_tri) = [ J-1 ; J-2 ; J ] ;
 endfor
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,6 +112,9 @@ for I = 1:length(geom.circdownX)
       endif
       X(J,indI)=xtmp; Y(J,indI)=ytmp; U(J,indI)=utmp; V(J,indI)=vtmp;
       LENG_INDI(indI)++;
+      ind_patch_quad ++;
+      patch_i_quad(1:4,ind_patch_quad) = [ indI   ; indI-1 ; indI-1 ; indI ] ;
+      patch_j_quad(1:4,ind_patch_quad) = [ J-1    ; JJ-1    ; JJ      ; J    ] ;
       J++;
    endfor
    % Point on the axis of symmetry
@@ -106,6 +123,9 @@ for I = 1:length(geom.circdownX)
                                                                                           params) ;
    Y(J,indI) += 1.e-6 ; % To avoid singularity on axis
    LENG_INDI(indI)++;
+   ind_patch_tri ++;
+   patch_i_tri(1:3,ind_patch_tri) = [ indI   ; indI-1 ; indI ] ;
+   patch_j_tri(1:3,ind_patch_tri) = [ J-1    ; JJ    ; J    ] ;
 endfor
 
 ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,6 +142,10 @@ while 1
    if (X(J,indI) > geom.xe) 
      break;
    endif
+   ind_patch_tri ++;
+   patch_i_tri(1:3,ind_patch_tri) = [ indI-1   ; indI-1 ; indI ] ;
+   patch_j_tri(1:3,ind_patch_tri) = [ J    ; J+1    ; J    ] ;
+   
    for J = 2:LENG_INDI(indI-1)-1 % Internal point
      intersection=false;
    % Point 1: right-running C-    ---> ( J-1 , indI   )
@@ -133,10 +157,10 @@ while 1
      catch
         % Possible intersection of characteristics -> shock -> solution not supported by the method of characteristics
         % Stop the C- characteristic and copy the values from the upstream C- characteristic that intersects
-        X(J,indI) = X(J+2,indI-1);
-        Y(J,indI) = Y(J+2,indI-1);
-        U(J,indI) = U(J+2,indI-1);
-        V(J,indI) = V(J+2,indI-1);
+        X(J,indI) = X(J+1,indI-1);
+        Y(J,indI) = Y(J+1,indI-1);
+        U(J,indI) = U(J+1,indI-1);
+        V(J,indI) = V(J+1,indI-1);
      end
      test1 = (X(J,indI)-X(J-1,indI))*(Y(J  ,indI-1)-Y(J-1,indI)) - (Y(J,indI)-Y(J-1,indI))*(X(J  ,indI-1)-X(J-1,indI)) ;
      test2 = (X(J,indI)-X(J-1,indI))*(Y(J+1,indI-1)-Y(J-1,indI)) - (Y(J,indI)-Y(J-1,indI))*(X(J+1,indI-1)-X(J-1,indI)) ;
@@ -146,7 +170,14 @@ while 1
         break;
      endif
      
+%     if (X(J,indI) < X(J-1,indI))
+%       disp(['Delete that node ',num2str(indI),', ',num2str(J)])
+%     endif
+     
      LENG_INDI(indI) ++;
+     ind_patch_quad ++;
+     patch_i_quad(1:4,ind_patch_quad) = [ indI   ; indI-1 ; indI-1 ; indI ] ;
+     patch_j_quad(1:4,ind_patch_quad) = [ J-1    ; J      ; J+1    ; J    ] ;
    endfor
    
    if (intersection)
@@ -156,13 +187,12 @@ while 1
       Y(J:J+loclen-1,indI) = Y(J+1:LENG_INDI(indI-1),indI-1);
       U(J:J+loclen-1,indI) = U(J+1:LENG_INDI(indI-1),indI-1);
       V(J:J+loclen-1,indI) = V(J+1:LENG_INDI(indI-1),indI-1);
-      
-      %X(J:end,indI) = X(J:end,indI-1);
-      %Y(J:end,indI) = Y(J:end,indI-1);
-      %U(J:end,indI) = U(J:end,indI-1);
-      %V(J:end,indI) = V(J:end,indI-1);
-      %loclen = size(X,1)-J+1; % length of copied data
       LENG_INDI(indI) = LENG_INDI(indI) + loclen ;
+      
+      ind_patch_tri ++;
+      patch_i_tri(1:3,ind_patch_tri) = [ indI   ; indI-1 ; indI ] ;
+      patch_j_tri(1:3,ind_patch_tri) = [ J-1    ; J    ; J    ] ;
+      
    else
    % Point on the axis of symmetry
       J++;
@@ -171,6 +201,9 @@ while 1
                                                                                              params) ;
       Y(J,indI) += 1.e-6 ; % To avoid singularity on axis
       LENG_INDI(indI)++;
+      ind_patch_tri ++;
+      patch_i_tri(1:3,ind_patch_tri) = [ indI   ; indI-1 ; indI ] ;
+      patch_j_tri(1:3,ind_patch_tri) = [ J-1    ; LENG_INDI(indI-1)    ; J    ] ;
    endif
 end
 
@@ -192,6 +225,10 @@ for J = 2:LENG_INDI(indI-1)-1
    [X(J,indI),Y(J,indI),U(J,indI),V(J,indI)] = MOC_2D_steady_irrotational_internal_point( X(J+1,indI-1),Y(J+1,indI-1),U(J+1,indI-1),V(J+1,indI-1),...
                                                                                           X(J-1,indI  ),Y(J-1,indI  ),U(J-1,indI  ),V(J-1,indI  ),...
                                                                                           params) ;
+   LENG_INDI(indI) ++;
+   ind_patch_quad ++;
+   patch_i_quad(1:4,ind_patch_quad) = [ indI   ; indI-1 ; indI-1 ; indI ] ;
+   patch_j_quad(1:4,ind_patch_quad) = [ J-1    ; J      ; J+1    ; J    ] ;
 endfor
 % Point on axis of symmetry
 J++;
@@ -199,11 +236,14 @@ J++;
                                                                                        X(J-1,indI), Y(J-1,indI),U(J-1,indI), V(J-1,indI),...
                                                                                        params) ;
 Y(J,indI) += 1.e-6 ; % To avoid singularity on axis
-
+ind_patch_tri ++;
+patch_i_tri(1:3,ind_patch_tri) = [ indI   ; indI-1 ; indI ] ;
+patch_j_tri(1:3,ind_patch_tri) = [ J-1    ; LENG_INDI(indI-1)    ; J    ] ;
+      
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Plotting the results...')
 fig1=figure(1);
-plot(X(1,:),Y(1,:),'k'); grid on; hold on;
+plot(X(1,:),Y(1,:),'k','linewidth',2); grid on; hold on; xlabel('X [m]'); ylabel('Y [m]');
 scatterX = reshape(X,[],1); scatterY = reshape(Y,[],1);
 scatterU = reshape(U,[],1); scatterV = reshape(V,[],1);
 condplot = scatterU>0;
@@ -211,86 +251,43 @@ condplot = scatterU>0;
 %scatter(scatterX(condplot),scatterY(condplot),100,Mach(condplot),'filled'); colormap hsv; colorbar;
 %quiver(X,Y,U,V)
 
-% Plot right-running C- characteristics
-for I=1:size(X,2)
-  condplot=U(:,I)>0;
-  plot(X(condplot,I),Y(condplot,I),'b'); hold on;
-  plot(X(condplot,I),Y(condplot,I),'bo');
-endfor
-% Plot left-running C+ characteristics from the initial-value line
-for J = 2:2*(geom.NI-1)
-  condplot=zeros(size(X,1),size(X,2)); condplot = logical(condplot);
-  if (J<=geom.NI)
-    Jstart = 1 ;
-    Istart = 1 + geom.NI - J ;
-  else
-    Jstart = 1 + 2*(J - geom.NI) ;
-    Istart = 1 + J - geom.NI ;
-  endif
-  Iend = geom.NI;
-  Jend = J ;
-  condplot([Jstart:Jend],[Istart:Iend]) = eye(Iend-Istart+1);
-  plot(X(condplot),Y(condplot),'b');
-endfor
-% Plot Left-running characteristics in the downwards circular arc with prespecified points
-loclen = geom.NI + length(geom.circdownTheta);
-FIND_PROBLEM = find(LENG_INDI(1:loclen-1)==LENG_INDI(2:loclen))  ; % Index of INDI where we deleted a point because out of nozzle
-for J = 2:2*(geom.NI-1)+length(geom.circdownTheta)
-  CURRENT_PROBLEM=1;
-  condplot=zeros(size(X,1),size(X,2)); condplot = logical(condplot);
-  Jplot = J;
-  
-  if (J<=2*(geom.NI-1))
-    Istart = geom.NI ;
-  else
-    Istart = geom.NI + J - 2*(geom.NI-1) - 1 ;
-  endif
-  
-  if (~isempty(FIND_PROBLEM)) % If there are some points that were removed 
-   % when computing the solution from the prescribed wall points
-    for kk=1:length(FIND_PROBLEM)
-      Iend = FIND_PROBLEM(CURRENT_PROBLEM) ; 
-      if (Istart<=Iend) 
-        condplot(Jplot,Istart:Iend) = 1;
-        plot(X(condplot),Y(condplot),'b');
-        Istart = Iend +1;
-        if (X(Jplot,Iend)==X(1,Iend) && Y(Jplot,Iend)==Y(1,Iend) )
-          break;
-        endif
-      endif
-      Jplot--;
-      CURRENT_PROBLEM ++;
-    endfor
-    if (Jplot>1) % Plot everything after the C+ where a point had been deleted
-%      Iend = length(LENG_INDI);
-      Iend = geom.NI + length(geom.circdownTheta);
-      while (U(Jplot,Istart)==0)
-        Istart++;
-      endwhile
-      condplot(Jplot,Istart:Iend) = 1 ;
-      plot(X(condplot),Y(condplot),'b');
-    endif
-  else % All the points are there and are inside the domain
-%    Iend = length(LENG_INDI);
-    Iend = geom.NI + length(geom.circdownTheta);
-    condplot(Jplot,Istart:Iend) = 1;
-    plot(X(condplot),Y(condplot),'b');
-  endif
+for I=1:ind_patch_tri
+  patch_x_tri(1:3,I) = [ X(patch_j_tri(1,I),patch_i_tri(1,I)) ; ...
+                         X(patch_j_tri(2,I),patch_i_tri(2,I)) ; ...
+                         X(patch_j_tri(3,I),patch_i_tri(3,I)) ; ] ;
+  patch_y_tri(1:3,I) = [ Y(patch_j_tri(1,I),patch_i_tri(1,I)) ; ...
+                         Y(patch_j_tri(2,I),patch_i_tri(2,I)) ; ...
+                         Y(patch_j_tri(3,I),patch_i_tri(3,I)) ; ] ;
+  patch_c_tri(1:3,I) = [ pressure(patch_j_tri(1,I),patch_i_tri(1,I)) ; ...
+                         pressure(patch_j_tri(2,I),patch_i_tri(2,I)) ; ...
+                         pressure(patch_j_tri(3,I),patch_i_tri(3,I)) ; ] ;
 endfor
 
-% I = geom.circdownTheta+params.NI is the last characteristic C- from the circular arc
-##condplot=zeros(size(X,1),size(X,2)); condplot = logical(condplot);
-##I = length(geom.circdownTheta) + geom.NI;
-##for J=size(X,1)-2 : -1 : -length(geom.circdownTheta)
-##  locA=rot90(diag(ones(size(X,1)-abs(J),1),-J),-1);
-##  condplot(:,I:end)=locA(:,1:size(X,2)-I+1);
-##  plot(X(condplot),Y(condplot),'b');
-##endfor
+for I=1:ind_patch_quad
+  patch_x_quad(1:4,I) = [ X(patch_j_quad(1,I),patch_i_quad(1,I)) ; ...
+                          X(patch_j_quad(2,I),patch_i_quad(2,I)) ; ...
+                          X(patch_j_quad(3,I),patch_i_quad(3,I)) ; ...
+                          X(patch_j_quad(4,I),patch_i_quad(4,I)) ; ] ;
+  patch_y_quad(1:4,I) = [ Y(patch_j_quad(1,I),patch_i_quad(1,I)) ; ...
+                          Y(patch_j_quad(2,I),patch_i_quad(2,I)) ; ...
+                          Y(patch_j_quad(3,I),patch_i_quad(3,I)) ; ...
+                          Y(patch_j_quad(4,I),patch_i_quad(4,I)) ; ] ;
+  patch_c_quad(1:4,I) = [ pressure(patch_j_quad(1,I),patch_i_quad(1,I)) ; ...
+                          pressure(patch_j_quad(2,I),patch_i_quad(2,I)) ; ...
+                          pressure(patch_j_quad(3,I),patch_i_quad(3,I)) ; ...
+                          pressure(patch_j_quad(4,I),patch_i_quad(4,I)) ; ] ;
+endfor
 
-%plot(newx2,newy2,'ro')
+%patch(patch_x_tri,patch_y_tri,patch_c_tri,'LineStyle','none');
+%patch(patch_x_quad,patch_y_quad,patch_c_quad,'LineStyle','none'); colormap(jet(256)) ; colorbar;
+
+% To show the left- and right-running characteristics
+patch(patch_x_tri,patch_y_tri,patch_c_tri,'LineStyle','-');
+patch(patch_x_quad,patch_y_quad,patch_c_quad,'LineStyle','-'); colormap(jet(256)) ; %colorbar;
 
 %ylim([0 Y(1,end)])
 axis equal; 
+
 ##saveas(fig1,'Characteristics.pdf')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,19 +300,19 @@ for I=1:size(X,2)
 endfor
 disp('Postprocessing the results...')
 [chocked] = get_Laval_theory(geom,params,X(1,wallnodesJ),Y(1,wallnodesJ)) ;
-loglog(X(1,wallnodesJ),pressure(1,wallnodesJ)/params.P,'r'); hold on; % Wall nodes
-loglog(X(condplot),pressure(condplot)/params.P,'b'); % Axis nodes
-loglog(X(1,wallnodesJ),chocked.pressure,'k'); % 1D theory on axis
+semilogy(X(1,wallnodesJ),pressure(1,wallnodesJ)/params.P,'r','linewidth',2); hold on; % Wall nodes
+semilogy(X(condplot),pressure(condplot)/params.P,'b','linewidth',2); % Axis nodes
+semilogy(X(1,wallnodesJ),chocked.pressure,'k','linewidth',2); % 1D theory on axis
 grid on; ylabel('Static pressure / Stagnation pressure [-]'); xlabel('X [m]');
 legend('Wall','Axis','1D')
-axis([0.1 geom.xe 0.01 1])
+axis([0 geom.xe 0.01 1])
 ##saveas(fig2,'Pressure.pdf')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fig3=figure(3);
-plot(X(1,wallnodesJ),Mach(1,wallnodesJ),'r'); hold on; % Wall nodes
-plot(X(condplot),Mach(condplot),'b'); % Axis nodes
-plot(X(1,wallnodesJ),chocked.mach,'k'); % 1D theory on axis
+plot(X(1,wallnodesJ),Mach(1,wallnodesJ),'r','linewidth',2); hold on; % Wall nodes
+plot(X(condplot),Mach(condplot),'b','linewidth',2); % Axis nodes
+plot(X(1,wallnodesJ),chocked.mach,'k','linewidth',2); % 1D theory on axis
 grid on; ylabel('Mach number [-]'); xlabel('X [m]');
 legend('Wall','Axis','1D')
 axis([0 geom.xe 1 4])

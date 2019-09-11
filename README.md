@@ -14,7 +14,7 @@ The initial-value line is chosen as the line where the y-velocity component is e
 by intersecting left-running and right-running characteristics. The compatibility and characteristic equations are numerically solved by a modified Euler predictor-corrector 
 method to determine the x- and y-velocity components and the location of the new node.
 
-![Example of intersections of characteristics](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics.jpg)
+![Example of intersections of characteristics](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics_pressure.jpg)
 
 ![Example of pressure distribution](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Pressure.jpg)
 
