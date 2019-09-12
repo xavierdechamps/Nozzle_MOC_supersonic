@@ -1,8 +1,10 @@
 function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp,...
                                                                      xm,ym,um,vm,...
                                                                      params )
-% xp,yp,up,vp are conditions at left -running characteristic C+
-% xm,ym,um,vm are conditions at right-running characteristic C-
+% This function computes the intersection of a left-running C+ characteristic
+% and a right-running C- characteristic.
+% xp,yp,up,vp are conditions from the left -running characteristic C+
+% xm,ym,um,vm are conditions from the right-running characteristic C-
    x_orig = [ xp , xm ] ; y_orig = [ yp , ym ] ;
    u_orig = [ up , um ] ; v_orig = [ vp , vm ] ;
    
@@ -12,13 +14,13 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp
    eps_vel = 1.e-5;
 
 % Predictor step
+% Used to provide a first estimation of the intersection of the 2 characteristics
    [xo,yo,uo,vo] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp,up,vp,...
                                                                      xm,ym,um,vm,...
                                                                      x_orig,y_orig,u_orig,v_orig,...
                                                                      params ) ;
    while 1
       step_current++;
-      
 % Corrector step
       xcp = xp; ycp = 0.5*(yp+yo) ; ucp = 0.5*(up+uo) ; vcp = 0.5*(vp+vo) ;
       xcm = xm; ycm = 0.5*(ym+yo) ; ucm = 0.5*(um+uo) ; vcm = 0.5*(vm+vo) ;
@@ -28,10 +30,9 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp
                                                                        params ) ;
       error_pos = max( [ xo-xn , yo-yn ] );
       error_vel = max( [ uo-un , vo-vn ] );
-      xo = xn ;
-      yo = yn ;
-      uo = un ;
-      vo = vn ;
+      xo = xn ;      yo = yn ;
+      uo = un ;      vo = vn ;
+      % Check if we converged on the position and on the velocity components
       if (abs(error_pos)<eps_pos && abs(error_vel)<eps_vel)
         break;
       endif
@@ -63,8 +64,10 @@ function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp
   S     = a.^2 .* vo ./ yo ;
   
 % Solve the system matrix to get the position of the intersection of the C+ and C- characteristics
-  matA    = [ -lambda(1) 1 ; -lambda(2) 1 ] ;
-  vecB    = [ y_orig(1)-lambda(1)*x_orig(1) ; y_orig(2)-lambda(2)*x_orig(2) ] ;
+  matA    = [ -lambda(1) , 1 ; ...
+              -lambda(2) , 1 ] ;
+  vecB    = [ y_orig(1)-lambda(1)*x_orig(1) ; ...
+              y_orig(2)-lambda(2)*x_orig(2)  ] ;
   new_pos = matA\vecB ;
   xn   = new_pos(1);
   yn   = new_pos(2);

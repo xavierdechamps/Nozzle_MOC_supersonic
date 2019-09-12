@@ -1,4 +1,7 @@
 function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_wall ( xp,yp,up,vp,geom,params )
+%
+% This function computes the intersection of a left-running C+ characteristic
+% with the wall. Output of the function is the position + data at the intersection on the wall.
 
    x_orig = xp ; y_orig = yp ; u_orig = up ; v_orig = vp ;
    
@@ -8,6 +11,7 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_wall ( xp,yp,up,vp,geom,para
    eps_vel = 1.e-5;
    
 % Predictor step
+% Used to provide a first estimation of the intersection of the characteristic with the wall
    [xo,yo,uo,vo] = MOC_2D_steady_irrotational_solve_wall ( xp,yp,up,vp,x_orig,y_orig,u_orig,v_orig,geom,params ) ;
    
    while 1
@@ -17,10 +21,9 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_wall ( xp,yp,up,vp,geom,para
      [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_wall ( xcp,ycp,ucp,vcp,x_orig,y_orig,u_orig,v_orig,geom,params ) ;
       error_pos = max( [ xo-xn , yo-yn ] );
       error_vel = max( [ uo-un , vo-vn ] );
-      xo = xn ;
-      yo = yn ;
-      uo = un ;
-      vo = vn ;
+      xo = xn ;      yo = yn ;
+      uo = un ;      vo = vn ;
+      % Check if we converged on the position and on the velocity components
       if (abs(error_pos)<eps_pos && abs(error_vel)<eps_vel)
         break;
       endif

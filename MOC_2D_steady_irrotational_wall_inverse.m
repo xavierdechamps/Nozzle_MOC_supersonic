@@ -1,6 +1,11 @@
 function [u4,v4,x2,y2,u2,v2] = MOC_2D_steady_irrotational_wall_inverse ( xin,yin,uin,vin,...
                                                                          theta4,params )
-   
+%
+% This function uses the inverse method to determine the (u,v) data at a known wall point
+% Output of the function is the data at the imposed wall point + the position and data (x2,y2,u2,v2)
+% of the intersection of a C+ characteristic emanating from the wall and the C- characteristic
+% from the upstream wall point.
+%
    step_current = 0;
    step_max = 10;
    eps_pos = 1.e-8;
@@ -17,10 +22,8 @@ function [u4,v4,x2,y2,u2,v2] = MOC_2D_steady_irrotational_wall_inverse ( xin,yin
      [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_wall_inverse ( x,y,u,v,theta4,params) ;
       
       error_vel = max( [ u(3,1)-un(3,1) , v(3,1)-vn(3,1) ] );
-      x = xn ;
-      y = yn ;
-      u = un ;
-      v = vn ;
+      x = xn ;      y = yn ;
+      u = un ;      v = vn ;
       if (abs(error_vel)<eps_vel)
         break;
       endif
@@ -29,12 +32,9 @@ function [u4,v4,x2,y2,u2,v2] = MOC_2D_steady_irrotational_wall_inverse ( xin,yin
       endif
     end
     
-    u4 = u(3,1);
-    v4 = v(3,1);
-    x2 = x(1,2);
-    y2 = y(1,2);
-    u2 = u(1,2);
-    v2 = v(1,2);
+    u4 = u(3,1);    v4 = v(3,1); % Data at the imposed wall point
+    x2 = x(1,2);    y2 = y(1,2); 
+    u2 = u(1,2);    v2 = v(1,2);
 endfunction
 
 function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_wall_inverse ( x,y,u,v,theta4,params )

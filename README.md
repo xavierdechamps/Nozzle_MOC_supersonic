@@ -1,7 +1,7 @@
 # Nozzle_MOC_supersonic
-A code based on the Method of Characteristics to solve the supersonic flow inside a nozzle.
+A code based on the Method of Characteristics to solve the supersonic flow inside a de Laval nozzle.
 
-This Matlab / Octave code solves the flow inside a nozzle of known shape. The flow is assumed to be steady, two-dimensional, irrotational and supersonic. 
+This Matlab / Octave code solves the flow inside a de Laval nozzle of known shape. The flow is assumed to be steady, two-dimensional, irrotational and supersonic. 
 The methods developed in this project are strongly based on the reference book "Gas Dynamics, Volume II, Multidimensional Flow" by Zucrow Maurice J. and Hoffman Joe D., 
 John Wiley and Sons, 1977.
 
@@ -14,7 +14,11 @@ The initial-value line is chosen as the line where the y-velocity component is e
 by intersecting left-running and right-running characteristics. The compatibility and characteristic equations are numerically solved by a modified Euler predictor-corrector 
 method to determine the x- and y-velocity components and the location of the new node.
 
-![Example of intersections of characteristics](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics_pressure.jpg)
+## Example of result in the case of a horizontal tangent at the exit lip point
+![Example of intersections of characteristics](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics_velocity_thetae0.jpg)
+
+## Example of result in the case of conical diverging section
+![Example of intersections of characteristics](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics_velocity.jpg)
 
 ![Example of pressure distribution](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Pressure.jpg)
 
