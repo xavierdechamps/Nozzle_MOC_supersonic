@@ -45,7 +45,7 @@ function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_wall ( xp,yp,up,vp,...
   lambda = tand ( theta + alpha ) ; % lambda+
   Q     = up.^2 - a.^2 ;
   R     = 2*up.*vp - Q.*lambda ;
-  S     = a.^2 .* vp ./ yp ;
+  S     = geom.delta * a.^2 .* vp ./ yp ;
   
   % Get the coefficients a,b,c for the 2nd order poly for the wall
   [abcpoly,ywall,tangentwall] = MOC_2D_steady_irrotational_get_geometry(0.,1,geom) ;
@@ -71,11 +71,4 @@ function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_wall ( xp,yp,up,vp,...
     vn(i) = un(i) * tangentwall ;
   endfor
   
-endfunction
-
-function a = get_speed_sound(params,V)
-% Speed of sound a² = a0²       - 0.5*(gamma-1)*V²
-%                   = gamma*R*T - 0.5*(gamma-1)*V²
-  a = sqrt ( params.gamma * params.R * params.T - ...
-             0.5 * ( params.gamma - 1.) * V.^2 ) ;
 endfunction

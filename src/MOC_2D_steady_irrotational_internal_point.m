@@ -1,6 +1,6 @@
 function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp,...
                                                                      xm,ym,um,vm,...
-                                                                     params )
+                                                                     geom,params )
 % This function computes the intersection of a left-running C+ characteristic
 % and a right-running C- characteristic.
 % xp,yp,up,vp are conditions from the left -running characteristic C+
@@ -18,7 +18,7 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp
    [xo,yo,uo,vo] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp,up,vp,...
                                                                      xm,ym,um,vm,...
                                                                      x_orig,y_orig,u_orig,v_orig,...
-                                                                     params ) ;
+                                                                     geom,params ) ;
    while 1
       step_current++;
 % Corrector step
@@ -27,7 +27,7 @@ function [xo,yo,uo,vo] = MOC_2D_steady_irrotational_internal_point ( xp,yp,up,vp
      [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_internal_point ( xcp,ycp,ucp,vcp,...
                                                                        xcm,ycm,ucm,vcm,...
                                                                        x_orig,y_orig,u_orig,v_orig,...
-                                                                       params ) ;
+                                                                       geom,params ) ;
       error_pos = max( [ xo-xn , yo-yn ] );
       error_vel = max( [ uo-un , vo-vn ] );
       xo = xn ;      yo = yn ;
@@ -46,7 +46,7 @@ endfunction
 function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp,up,vp,...
                                                                            xm,ym,um,vm,...
                                                                            x_orig,y_orig,u_orig,v_orig,...
-                                                                           params )
+                                                                           geom,params )
   
   xo = [xp xm] ;
   yo = [yp ym] ;
@@ -61,7 +61,7 @@ function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp
   lambda(:,2) = tand ( theta(2) - alpha(2) );  % lambda-
   Q     = uo.^2 - a.^2 ;
   R     = 2*uo.*vo - Q.*lambda ;
-  S     = a.^2 .* vo ./ yo ;
+  S     = geom.delta * a.^2 .* vo ./ yo ;
   
 % Solve the system matrix to get the position of the intersection of the C+ and C- characteristics
   matA    = [ -lambda(1) , 1 ; ...
@@ -78,11 +78,4 @@ function [xn,yn,un,vn] = MOC_2D_steady_irrotational_solve_internal_point ( xp,yp
   un   = new_vel(1) ;
   vn   = new_vel(2) ;
   
-endfunction
-
-function a = get_speed_sound(params,V)
-% Speed of sound a² = a0²       - 0.5*(gamma-1)*V²
-%                   = gamma*R*T - 0.5*(gamma-1)*V²
-  a = sqrt ( params.gamma * params.R * params.T - ...
-             0.5 * ( params.gamma - 1.) * V.^2 ) ;
 endfunction
