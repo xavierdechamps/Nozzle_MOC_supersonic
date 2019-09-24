@@ -25,7 +25,7 @@ function [chocked] = get_Laval_theory(geom,params,X,Y)
    %fplot(@(m)the_eq2(m,area(10)),[1 5] ); grid on
 
    for i=1:length(area)
-      chocked.mach(i)=fzero(@(m)the_eq(m,area(i)),[1 10]);
+      chocked.mach(i)=fzero(@(m)the_eq(m,area(i)),[1 25]);
    endfor
 
 % Pressure is the ratio p/P_stag
